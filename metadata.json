@@ -1,0 +1,7 @@
+{
+  "name": "SmartOrder MVP - POC",
+  "description": "A minimalist restaurant management system focused on AI-driven menu creation, reservation tracking, and QR code ordering. Designed with a Claude/Gemini aesthetic.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
