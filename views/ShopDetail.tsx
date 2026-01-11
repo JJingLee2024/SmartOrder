@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, PieChart, UtensilsCrossed } from 'lucide-react';
+import { LayoutDashboard, BookOpen, PieChart, UtensilsCrossed, Bell } from 'lucide-react';
 import { MenuView } from './MenuView';
 import { BookingView } from './BookingView';
 import { dataService } from '../services/dataService';
-import { Shop } from '../types';
+import { Shop, Order } from '../types';
 
 type Tab = 'menu' | 'booking' | 'report' | 'orders';
 
@@ -69,28 +69,31 @@ export const ShopDetail: React.FC = () => {
   );
 };
 
-const ReportTab: React.FC = () => (
-  <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center">
-    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-      <PieChart size={40} className="text-slate-300" />
-    </div>
-    <h3 className="text-xl font-bold text-slate-800 mb-2">數據報表開發中</h3>
-    <p className="text-slate-500">預計顯示「預訂 vs 現場」佔比、熱門菜色排行榜等關鍵數據。</p>
-  </div>
-);
-
 const OrdersTab: React.FC<{ shopId: string }> = ({ shopId }) => {
-  const [orders, setOrders] = useState(dataService.getOrders(shopId));
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  const handleStatusUpdate = (orderId: string, status: any) => {
+  const refreshOrders = () => {
+    setOrders(dataService.getOrders(shopId).sort((a,b) => b.createdAt - a.createdAt));
+  };
+
+  useEffect(() => {
+    refreshOrders();
+    // 監聽訂單更新事件
+    window.addEventListener('order-updated', refreshOrders);
+    return () => window.removeEventListener('order-updated', refreshOrders);
+  }, [shopId]);
+
+  const handleStatusUpdate = (orderId: string, status: Order['status']) => {
     dataService.updateOrderStatus(orderId, status);
-    setOrders(dataService.getOrders(shopId));
+    refreshOrders();
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-slate-800">當前訂單</h2>
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            當前訂單 {orders.filter(o => o.status === 'new').length > 0 && <Bell size={18} className="text-red-500 animate-pulse" />}
+          </h2>
       </div>
       
       {orders.length === 0 ? (
@@ -98,13 +101,14 @@ const OrdersTab: React.FC<{ shopId: string }> = ({ shopId }) => {
           目前暫無訂單
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {orders.map(order => (
-            <div key={order.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div key={order.id} className={`bg-white border rounded-2xl p-6 shadow-sm transition-all ${order.status === 'new' ? 'border-blue-500 ring-2 ring-blue-50' : 'border-slate-200'}`}>
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">桌號 {order.tableNo}</span>
-                  <h4 className="text-lg font-bold text-slate-800">訂單 #{order.id.slice(0,4)}</h4>
+                  <span className="text-xs font-black text-blue-600 uppercase tracking-widest">桌號 {order.tableNo}</span>
+                  <h4 className="text-lg font-bold text-slate-800">#{order.id.slice(-4)}</h4>
+                  <p className="text-[10px] text-slate-400">{new Date(order.createdAt).toLocaleTimeString()}</p>
                 </div>
                 <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
                   order.status === 'new' ? 'bg-orange-100 text-orange-600' :
@@ -114,36 +118,29 @@ const OrdersTab: React.FC<{ shopId: string }> = ({ shopId }) => {
                 </div>
               </div>
               
-              <div className="space-y-2 mb-6 border-y border-slate-100 py-4">
+              <div className="space-y-2 mb-6 border-y border-slate-50 py-4 max-h-40 overflow-y-auto">
                 {order.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-sm">
-                    <span className="text-slate-600">{item.name} x {item.quantity}</span>
+                    <span className="text-slate-600">{item.name} <span className="text-xs font-bold text-slate-400">x{item.quantity}</span></span>
                     <span className="font-medium text-slate-800">${item.price * item.quantity}</span>
                   </div>
                 ))}
               </div>
               
               <div className="flex justify-between items-center mb-6">
-                <span className="text-sm text-slate-400">總金額</span>
-                <span className="text-xl font-bold text-blue-600">${order.totalPrice}</span>
+                <span className="text-xs text-slate-400 font-bold uppercase">總金額</span>
+                <span className="text-xl font-black text-blue-600">${order.totalPrice}</span>
               </div>
 
               <div className="flex gap-2">
                 {order.status === 'new' && (
-                  <button 
-                    onClick={() => handleStatusUpdate(order.id, 'served')}
-                    className="flex-1 bg-blue-600 text-white text-sm py-2 rounded-lg font-bold"
-                  >
-                    出餐
-                  </button>
+                  <button onClick={() => handleStatusUpdate(order.id, 'served')} className="flex-1 bg-blue-600 text-white text-sm py-2.5 rounded-xl font-bold">出餐</button>
                 )}
                 {order.status === 'served' && (
-                  <button 
-                    onClick={() => handleStatusUpdate(order.id, 'paid')}
-                    className="flex-1 bg-emerald-600 text-white text-sm py-2 rounded-lg font-bold"
-                  >
-                    結帳
-                  </button>
+                  <button onClick={() => handleStatusUpdate(order.id, 'paid')} className="flex-1 bg-emerald-600 text-white text-sm py-2.5 rounded-xl font-bold">結帳</button>
+                )}
+                {order.status === 'paid' && (
+                  <div className="flex-1 text-center py-2.5 text-emerald-500 text-xs font-bold flex items-center justify-center gap-1">已結清</div>
                 )}
               </div>
             </div>
@@ -153,3 +150,11 @@ const OrdersTab: React.FC<{ shopId: string }> = ({ shopId }) => {
     </div>
   );
 };
+
+const ReportTab: React.FC = () => (
+  <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center">
+    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6"><PieChart size={40} className="text-slate-300" /></div>
+    <h3 className="text-xl font-bold text-slate-800 mb-2">數據報表開發中</h3>
+    <p className="text-slate-500">即將推出：熱門品項分析與營收概覽。</p>
+  </div>
+);
