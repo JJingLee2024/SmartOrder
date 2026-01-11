@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Store, Zap, BarChart3, Clock, ChevronRight, X } from 'lucide-react';
+import { Plus, Store, Zap, BarChart3, Clock, ChevronRight, X, Trash2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import { storageService } from '../services/storageService';
 import { Shop } from '../types';
 
 export const Home: React.FC = () => {
@@ -29,8 +30,22 @@ export const Home: React.FC = () => {
     }
   };
 
+  const handleReset = () => {
+    if (window.confirm('確定要將系統重置嗎？這將會刪除所有店舖、菜單與訂單資料且無法復原。')) {
+      storageService.clearAll();
+      window.location.reload();
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto py-12">
+    <div className="max-w-5xl mx-auto py-12 relative">
+      <button
+        onClick={handleReset}
+        className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors flex items-center gap-1 text-xs font-bold"
+      >
+        <Trash2 size={14} /> 重置系統
+      </button>
+
       <div className="text-center mb-16">
         <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
           歡迎使用 <span className="text-blue-600">SmartOrder</span>
@@ -66,7 +81,7 @@ export const Home: React.FC = () => {
 
       <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center shadow-xl shadow-slate-200/50">
         <h2 className="text-2xl font-bold text-slate-800 mb-8">開始你的第一間店舖</h2>
-        
+
         {shops.length === 0 ? (
           <button
             onClick={() => setIsModalOpen(true)}
@@ -111,7 +126,7 @@ export const Home: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
           <div className="bg-white rounded-3xl w-full max-w-sm p-8 relative shadow-2xl animate-in zoom-in-95 duration-200">
-            <button 
+            <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
             >
@@ -121,9 +136,9 @@ export const Home: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">店舖名稱</label>
-                <input 
+                <input
                   autoFocus
-                  type="text" 
+                  type="text"
                   value={newShopName}
                   onChange={e => setNewShopName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleConfirmCreate()}
@@ -131,7 +146,7 @@ export const Home: React.FC = () => {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
                 />
               </div>
-              <button 
+              <button
                 onClick={handleConfirmCreate}
                 disabled={!newShopName.trim()}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-100 transition-all mt-4"

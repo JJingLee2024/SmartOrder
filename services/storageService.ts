@@ -56,5 +56,12 @@ export const storageService = {
    */
   remove: (key: string): void => {
     localStorage.removeItem(key);
+  },
+
+  /**
+    * 清除所有資料 (重置系統)
+    */
+  clearAll: (): void => {
+    localStorage.clear();
   }
 };

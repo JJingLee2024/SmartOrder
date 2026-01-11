@@ -75,6 +75,15 @@ export const MenuView: React.FC<{ shopId: string }> = ({ shopId }) => {
     // 取得當前 index.html 的完整基礎路徑 (包含可能的目錄層級)
     const baseHref = window.location.href.split('#')[0];
 
+  const handleClearMenu = () => {
+    if (!menu) return;
+    if (window.confirm('確定要清空所有菜單項目嗎？此操作無法復原。')) {
+      const updated = { ...menu, items: [] };
+      setMenu(updated);
+      dataService.saveMenu(updated);
+    }
+  };
+
     return (
       <div className="space-y-8 animate-in fade-in duration-500">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -92,7 +101,7 @@ export const MenuView: React.FC<{ shopId: string }> = ({ shopId }) => {
                       <QRCodeSVG value={orderUrl} size={110} includeMargin={true} />
                     </div>
                     <div className="flex flex-col gap-2 w-full mt-2">
-                      <button 
+                       <button 
                         onClick={() => window.open(orderUrl, '_blank')}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all"
                       >
@@ -109,7 +118,16 @@ export const MenuView: React.FC<{ shopId: string }> = ({ shopId }) => {
           </div>
           
           <div className="space-y-6">
-            <h3 className="text-xl font-bold text-slate-800">菜單持續編輯</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-800">菜單持續編輯</h3>
+              <button 
+                onClick={handleClearMenu}
+                className="text-red-500 hover:text-red-700 text-sm font-bold flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                title="清空所有菜單"
+              >
+                <Trash2 size={16} /> 清空菜單
+              </button>
+            </div>
             <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
                 <h4 className="font-bold text-lg">{menu.brandName}</h4>
